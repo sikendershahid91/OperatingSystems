@@ -11,20 +11,28 @@ using namespace std;
 void load_data_into_memory(void);
 bool create_processes(void); 
 void sort_event_list(void); 
-
-
 bool event_handler(); 
+void print_report(void); 
+void create_model(void); 
+
+int CLOCK; 
 
 enum STATE{
 	RUNNING, 
 	READY, 
-	BLOCKED, 
+	BLOCKED,
+	TERMINATED,
 }; 
 enum TASK{
 	CORE, 
 	DISK, 
 	DISPLAY, 
 	INPUT,
+};
+
+enum CONTAINER_STATUS{
+	FREE, 
+	BUSY,
 };
 
 struct ProcessTask{
@@ -42,18 +50,41 @@ struct Process{
 	int _init_time;
 	int first_line; 
 	int last_line; 
-	int current_line; 
+	int current_line;
+	int delay;  
 	Process(int a_process_id, int a_init_time){
 		_process_id = a_process_id; 
 		_init_time = a_init_time; 
-		_state = BLOCKED; 
+		_state = BLOCKED;
+		delay = 0; 
 	}       
 	queue<ProcessTask> task_queue;
 };
 
+struct Core{
+	Process process_container; 
+	CONTAINER_STATUS status; 
+}; 
+
+struct Disk{
+	Process process_container; 
+	CONTAINER_STATUS status; 
+};
+
+struct Input{
+	Process process_container; 
+	CONTAINER_STATUS status; 
+}; 
+
+struct Display{
+	Process process_container; 
+	CONTAINER_STATUS status; 
+}; 
 
 int main(void){
-	load_data_into_memory(); 
+	load_data_into_memory();
+	create_processes(); 
+	create_model(); 
 
 
 	return 0; 
@@ -108,13 +139,71 @@ bool create_processes(void){
 	return 1; 
 }
 
+
+
 void sort_event_list(void){
-	
+
 }
 
+
+
+bool event_handler(void){
+
+
+
+}
+
+
+queue<Process> ready_queue; 
+queue<Process> disk_queue; 
+//no queues for input and display needed. 
+//Dont have to core objects or disk objects
+
+int free_cores; 
+bool disk; 
 void create_model(void){ 
 	//setup core 
 	//set disk 
 	//set display 
 	//set input
+
+}
+
+
+//helper function prototypes
+void queue_traverse(queue<Process> a_queue); 
+int busy_core(); 
+void print_report(void){
+	cout << "TIME ELAPSED:         " << CLOCK << endl;
+	cout << "NUMBER OF BUSY CORE:  " << busy_core() << endl;
+	cout << "CURRENT PROCESS STATUS" << 0 << endl;
+	// for loop
+	cout << "   CORE STEP:         " << 0 << endl;
+	// pull from core container
+	cout << "   DISK STEP:         " << 0 << endl;
+	// pull from disk container
+	cout << "   INPUT STEP:        " << 0 << endl;
+	// pull from input container
+	cout << "   DISPLAY STEP:      " << 0 << endl;
+	// pull from display container
+	cout << "READY QUEUE:\n";
+	queue_traverse(ready_queue); 
+	cout << "DISK QUEUE:\n";
+	queue_traverse(disk_queue); 
+	cout << "PROCESS TABLE:        " << 0 << endl;
+	cout << "   Process:[" << 0 << "] Start Time:[" << 0 << "] Disk I/O:["<< 0 <<"] Status:[" << 0 << "]\n";
+}
+
+
+// print report helper function
+int busy_core(){
+	return 0; 
+}
+
+void queue_traverse(queue<Process> a_queue){
+	queue<Process> temp_queue = a_queue; 
+	while(!temp_queue.empty()){
+		cout << "	Process:[" << temp_queue.front()._process_id <<"]\n"; 
+		temp_queue.pop();
+	}
 }

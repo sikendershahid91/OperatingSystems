@@ -10,6 +10,7 @@ using namespace std;
 // helper functions
 void load_data_into_memory(void);
 bool create_processes(void); 
+void sort_event_list(void); 
 
 
 bool event_handler(); 
@@ -19,7 +20,6 @@ enum STATE{
 	READY, 
 	BLOCKED, 
 }; 
-
 enum TASK{
 	CORE, 
 	DISK, 
@@ -37,20 +37,21 @@ struct ProcessTask{
 }; 
 
 struct Process{
-	//contents of process
 	STATE _state;
 	int _process_id;  
 	int _init_time;
-	//a processes queue
+	int first_line; 
+	int last_line; 
+	int current_line; 
 	Process(int a_process_id, int a_init_time){
 		_process_id = a_process_id; 
 		_init_time = a_init_time; 
 		_state = BLOCKED; 
-	}
+	}       
 	queue<ProcessTask> task_queue;
 };
 
-queue<Process> event_list; 
+
 int main(void){
 	load_data_into_memory(); 
 
@@ -76,39 +77,44 @@ void load_data_into_memory(void){
 
 
 
+deque<Process> event_list; 
 bool create_processes(void){
 	int index = 1; 
 	Process process(0,0);
-	ProcessTask task(DISK,0); 
+	TASK task = CORE; 
 	while(index < input_table_size){
 		if(input_table[index].operation == "NEW"){
 			if(index>1){ // adding finished processes to the event_list
-				event_list.push(process); 
+				event_list.push_back(process); 
 			}
 			Process new_process(index, input_table[index].parameter);   
 			process = new_process; 
 			index++;
 		}
-		if(input_table[index].operation == "CORE"){
-			ProcessTask new_task(CORE, input_table[index].parameter);
-			task = new_task; 
-		}
-		else if(input_table[index].operation == "DISK"){
-			ProcessTask new_task(DISK, input_table[index].parameter);
-			task = new_task;
-		}
-		else if(input_table[index].operation == "DISPLAY"){
-			ProcessTask new_task(DISPLAY, input_table[index].parameter);
-			task = new_task;
-		}
-		else if(input_table[index].operation == "INPUT"){
-			ProcessTask new_task(INPUT, input_table[index].parameter);
-			task = new_task;
-		}
+		if(input_table[index].operation == "CORE")
+			task = CORE;
+		else if(input_table[index].operation == "DISK")
+			task = DISK;
+		else if(input_table[index].operation == "DISPLAY")
+			task = DISPLAY;
+		else if(input_table[index].operation == "INPUT")
+			task = INPUT;
 		else
 			return 0;
-		process.task_queue.push(task); 
+		ProcessTask process_task(task, input_table[index].parameter); 
+		process.task_queue.push(process_task); 
 		index++;  
 	}
 	return 1; 
+}
+
+void sort_event_list(void){
+	
+}
+
+void create_model(void){ 
+	//setup core 
+	//set disk 
+	//set display 
+	//set input
 }

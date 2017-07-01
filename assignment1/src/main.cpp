@@ -3,9 +3,12 @@
 #include <string.h>
 #include <vector> 
 #include <deque>
+#include <stdlib.h>
 
 
 using namespace std; 
+
+#define MAX_CORE_SIZE 10
 
 // helper functions
 void load_data_into_memory(void);
@@ -13,7 +16,7 @@ bool create_processes(void);
 void sort_event_list(void); 
 bool event_handler(); 
 void print_report(void); 
-void create_model(void); 
+bool create_model(void); 
 
 int CLOCK; 
 
@@ -56,30 +59,46 @@ struct Process{
 		_process_id = a_process_id; 
 		_init_time = a_init_time; 
 		_state = BLOCKED;
+		// first line, last line, current line not really actually 
+		// this will go into process table 
 		delay = 0; 
-	}       
+	}   
+	Process(){
+		_process_id = -1;
+		_init_time = -1;
+		_state = BLOCKED; 
+		delay = 0; 
+	}    
 	queue<ProcessTask> task_queue;
 };
 
 struct Core{
-	Process process_container; 
-	CONTAINER_STATUS status; 
+	Process process_container;
+	CONTAINER_STATUS status;
+	// Core(Process a_process){
+	// 	process_container = a_process; 
+	// 	status = FREE; 
+	// }
 }; 
 
 struct Disk{
-	Process process_container; 
-	CONTAINER_STATUS status; 
+	Process process_container;
+	CONTAINER_STATUS status;
+	// Disk(Process a_process){
+	// 	process_container = a_process; 
+	// 	status = FREE; 
+	// }
 };
 
-struct Input{
-	Process process_container; 
-	CONTAINER_STATUS status; 
-}; 
+// struct Input{
+// 	Process process_container; 
+// 	CONTAINER_STATUS status; 
+// }; 
 
-struct Display{
-	Process process_container; 
-	CONTAINER_STATUS status; 
-}; 
+// struct Display{
+// 	Process process_container; 
+// 	CONTAINER_STATUS status; 
+// }; 
 
 int main(void){
 	load_data_into_memory();
@@ -156,17 +175,22 @@ bool event_handler(void){
 
 queue<Process> ready_queue; 
 queue<Process> disk_queue; 
-//no queues for input and display needed. 
-//Dont have to core objects or disk objects
-
 int free_cores; 
-bool disk; 
-void create_model(void){ 
-	//setup core 
-	//set disk 
-	//set display 
-	//set input
-
+Disk disk;
+// Input input; 
+// Display display; 
+Core cores[MAX_CORE_SIZE];
+int cores_size = 0; 
+bool create_model(void){ 
+	if(input_table[0].operation == "NCORES")
+		cores_size = input_table[0].parameter;
+	else
+		return 0; 
+	free_cores = cores_size;
+	disk.status = FREE; 
+	for(int i = 0; i < cores_size ; i++){
+		cores[i].status = FREE; 
+	}
 }
 
 

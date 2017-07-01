@@ -185,12 +185,15 @@ bool create_model(void){
 	if(input_table[0].operation == "NCORES")
 		cores_size = input_table[0].parameter;
 	else
+		return 0;
+	if(cores_size > MAX_CORE_SIZE)
 		return 0; 
 	free_cores = cores_size;
 	disk.status = FREE; 
 	for(int i = 0; i < cores_size ; i++){
 		cores[i].status = FREE; 
 	}
+	return 1; 
 }
 
 

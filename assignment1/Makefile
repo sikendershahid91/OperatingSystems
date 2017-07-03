@@ -1,3 +1,9 @@
+# SIKENDER SHAHID
+# PSID 0981476
+# COSC 3360
+# 6/30/2017
+
+
 CC=g++
 CFLAGS=-Wall -c -g
 LFLAGS = -Wall -g

@@ -108,12 +108,10 @@ int main(void){
 	load_data_into_memory();
 	create_processes(); 
 	create_model();
-	// while(!event_list.empty()){
-	// 	event_handler(event_list.front()); 
-	// 	cout << "bug" << bug_i << endl; 
-	// 	bug_i++;  
-	// 	event_list.pop(); 
-	// }
+	while(!event_list.empty()){
+		event_handler(event_list.front()); 
+		event_list.pop(); 
+	}
 	return 0; 
 }
 
@@ -138,12 +136,12 @@ bool create_processes(void){
 		if(input_table[index].operation == "NEW" || index == input_table_size){
 			if(index>1){ // adding finished processes to the event_list
 				event_list.push(process); 
-				cout << "debug_2 process id going into queue " << process._process_id << endl; 
+		//		cout << "debug_2 process id going into queue " << process._process_id << endl; 
 				if(input_table[index].operation == "EOT")
 					break; 
 			}
 			if(index != input_table_size){
-				cout <<"debug_2 process id --" << index << endl;
+		//		cout <<"debug_2 process id --" << index << endl;
 				Process new_process(index, input_table[index].parameter);   
 				process = new_process; 
 				index++;
@@ -160,20 +158,19 @@ bool create_processes(void){
 		else
 			return 0; // exception
 		ProcessTask process_task(task, input_table[index].parameter); 
-		cout << "debug_2 task, parameter :: " << task << " " << input_table[index].parameter << endl;
+		//cout << "debug_2 task, parameter :: " << task << " " << input_table[index].parameter << endl;
 		process.task_queue.push(process_task); 
 		index++;  
 	}
 	return 1; 
 }
 
-// void sort_event_list(void){
-
-// }
-
+// void sort_event_list(void){}
+// TODO : NEED SCHEDULAR MEMORY COLLAPSING
 bool event_handler(Process& a_process){
 	TASK a_process_task = a_process.task_queue.front()._task;
 	int a_param = a_process.task_queue.front()._time; 
+	cout << "PROCESS : " << a_process._process_id << "TASK : " << a_process_task << "PARAM : "<< a_param<< endl;
 	if(a_process_task == CORE)
 		core_request(a_process, a_param); 
 	else if(a_process_task == DISK)

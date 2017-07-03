@@ -103,22 +103,16 @@ struct Disk{
 	CONTAINER_STATUS status;
 };
 
-// struct Input{
-// 	Process process_container; 
-// 	CONTAINER_STATUS status; 
-// }; 
-
-// struct Display{
-// 	Process process_container; 
-// 	CONTAINER_STATUS status; 
-// }; 
 queue<Process> event_list; 
 int main(void){
 	load_data_into_memory();
 	create_processes(); 
 	create_model();
+	int bug_i = 0; 
 	while(!event_list.empty()){
 		event_handler(event_list.front()); 
+		cout << "bug" << bug_i << endl; 
+		bug_i++;  
 		event_list.pop(); 
 	}
 	return 0; 
@@ -142,7 +136,10 @@ bool create_processes(void){
 	int index = 1; 
 	Process process(0,0);
 	TASK task = CORE; 
+	int bug_1_i = 0; 
+	cout << "debug_1_ouput" << endl; 
 	while(index < input_table_size){
+		cout << "debug_1 [instruction processed] " << bug_1_i << endl; 
 		if(input_table[index].operation == "NEW"){
 			if(index>1){ // adding finished processes to the event_list
 				event_list.push(process); 
@@ -150,6 +147,7 @@ bool create_processes(void){
 			Process new_process(index, input_table[index].parameter);   
 			process = new_process; 
 			index++;
+			cout << "debug_1 [created process]" << endl; 
 		}
 		if(input_table[index].operation == "CORE")
 			task = CORE;
@@ -164,6 +162,7 @@ bool create_processes(void){
 		ProcessTask process_task(task, input_table[index].parameter); 
 		process.task_queue.push(process_task); 
 		index++;  
+		bug_1_i++; 
 	}
 	return 1; 
 }

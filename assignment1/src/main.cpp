@@ -108,13 +108,12 @@ int main(void){
 	load_data_into_memory();
 	create_processes(); 
 	create_model();
-	int bug_i = 0; 
-	while(!event_list.empty()){
-		event_handler(event_list.front()); 
-		cout << "bug" << bug_i << endl; 
-		bug_i++;  
-		event_list.pop(); 
-	}
+	// while(!event_list.empty()){
+	// 	event_handler(event_list.front()); 
+	// 	cout << "bug" << bug_i << endl; 
+	// 	bug_i++;  
+	// 	event_list.pop(); 
+	// }
 	return 0; 
 }
 
@@ -129,25 +128,26 @@ void load_data_into_memory(void){
 		input_table_size++; 
 		input_table.resize(2+input_table_size); 
 	}
-	cout << input_table_size << endl; 
 }
 
 bool create_processes(void){
 	int index = 1; 
 	Process process(0,0);
 	TASK task = CORE; 
-	int bug_1_i = 0; 
-	cout << "debug_1_ouput" << endl; 
-	while(index < input_table_size){
-		cout << "debug_1 [instruction processed] " << bug_1_i << endl; 
-		if(input_table[index].operation == "NEW"){
+	while(index <= input_table_size){
+		if(input_table[index].operation == "NEW" || index == input_table_size){
 			if(index>1){ // adding finished processes to the event_list
 				event_list.push(process); 
+				cout << "debug_2 process id going into queue " << process._process_id << endl; 
+				if(input_table[index].operation == "EOT")
+					break; 
 			}
-			Process new_process(index, input_table[index].parameter);   
-			process = new_process; 
-			index++;
-			cout << "debug_1 [created process]" << endl; 
+			if(index != input_table_size){
+				cout <<"debug_2 process id --" << index << endl;
+				Process new_process(index, input_table[index].parameter);   
+				process = new_process; 
+				index++;
+			}
 		}
 		if(input_table[index].operation == "CORE")
 			task = CORE;
@@ -158,11 +158,11 @@ bool create_processes(void){
 		else if(input_table[index].operation == "INPUT")
 			task = INPUT;
 		else
-			return 0;
+			return 0; // exception
 		ProcessTask process_task(task, input_table[index].parameter); 
+		cout << "debug_2 task, parameter :: " << task << " " << input_table[index].parameter << endl;
 		process.task_queue.push(process_task); 
 		index++;  
-		bug_1_i++; 
 	}
 	return 1; 
 }
@@ -201,9 +201,9 @@ bool create_model(void){
 	if(input_table[0].operation == "NCORES")
 		cores_size = input_table[0].parameter;
 	else
-		return 0;
+		return 0; // exception1
 	if(cores_size > MAX_CORE_SIZE)
-		return 0; 
+		return 0; // exception2
 	free_cores = cores_size;
 	disk.status = FREE; 
 	for(int i = 0; i < cores_size ; i++){

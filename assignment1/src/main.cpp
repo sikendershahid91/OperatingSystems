@@ -21,19 +21,19 @@ struct Process;
 struct ProcessTask;
 // event handler routines
 void core_request(Process& a_process, int param); 
-void core_request_completion(Process& a_process); 
+void core_request_completion(); 
 void disk_request(Process& a_process, int param); 
-void disk_request_completion(Process& a_process); 
+void disk_request_completion(); 
 void display_request(Process& a_process, int param); 
-void display_request_completion(Process& a_process); 
+void display_request_completion(); 
 void input_request(Process& a_process, int param); 
-void input_request_completion(Process& a_process); 
+void input_request_completion(); 
 
 // helper routines
 void load_data_into_memory(void);
 bool create_processes(void); 
 void sort_event_list(void); 
-bool event_handler(Process& a_process); 
+bool event_handler(Process& a_process, int time); 
 void print_report(void); 
 bool create_model(void); 
 
@@ -208,8 +208,10 @@ bool event_handler(Process& a_process, int init_time){
 		}
 		else if(a_process_task == DISPLAY){
 			display_request(a_process, a_param); 
-			dispaly_request_completion(); 
+			display_request_completion(); 
 		}
+		a_process.task_queue.pop();
+		event_handler(a_process, 0); 
 	}
 	else
 		print_report();
@@ -219,7 +221,9 @@ bool event_handler(Process& a_process, int init_time){
 
 void core_request(Process& a_process, int request_time){
 	if(free_cores > 0){
-		a_process._state = RUNNING; 
+		a_process._state = RUNNING;
+		int i = 0; 
+		while(cores[i].status != FREE){ i++; }
 		cores[i].process_container = a_process; 
 		cores[i].status = BUSY; 
 		free_cores--;
@@ -233,7 +237,7 @@ void core_request(Process& a_process, int request_time){
 
 void core_request_completion(){
 	if(ready_queue.empty()){
-		free_cores++; 
+		free_cores++;
 	}
 	else{
 		core_request(ready_queue.front(), ready_queue.front().task_queue.front()._time); 
@@ -258,10 +262,9 @@ void disk_request(Process& a_process, int request_type){
 	}
 	else
 		disk_queue.push(a_process);
-	disk_request_completion(a_process); 
 }
 
-void disk_request_completion(Process& a_process){
+void disk_request_completion(){
 	if(disk_queue.empty()){
 		disk.status = FREE; 
 	}
@@ -269,45 +272,30 @@ void disk_request_completion(Process& a_process){
 		disk_request(disk_queue.front(), disk_queue.front().task_queue.front()._time); 
 		disk_queue.pop(); 
 	}
-	a_process.task_queue.pop(); 
-	event_handler(a_process); 
 }
 
 void display_request(Process& a_process, int terminal_time){
 	a_process._state = BLOCKED; 
 	CLOCK = CLOCK + terminal_time; 
-	display_request_completion(a_process); 
 }
 
-// void sort_event_list(void){}
-// TODO : NEED SCHEDULAR MEMORY COLLAPSING
-bool event_handler(Process& a_process){
-	if (!a_process.task_queue.empty())
-	{
-		TASK a_process_task = a_process.task_queue.front()._task;
-		int a_param = a_process.task_queue.front()._time; 
-		if(a_process_task == CORE)
-			core_request(a_process, a_param); 
-		else if(a_process_task == DISK)
-			disk_request(a_process, a_param); 
-		else if(a_process_task == INPUT)
-			input_request(a_process, a_param); 
-		else if(a_process_task == DISPLAY)
-			display_request(a_process, a_param); 
-		else
-			a_process._state = TERMINATED;
-	} 
-	else{
-		print_report();
-		return 0; 
-	}
-	return 1; 
+void display_request_completion(){
+	// a_process.task_queue.pop(); 
+	// event_handler(a_process); 
 }
 
+void input_request(Process& a_process, int terminal_time){ 
+	a_process._state = BLOCKED; 
+	CLOCK = CLOCK + terminal_time;
+}
 
+void input_request_completion(){
+	// a_process.task_queue.pop(); 
+	// event_handler(a_process); 
+}
 
-
-
+void core_container(void); 
+void disk_container(void); 
 // print report helper function prototypes
 void queue_traverse(queue<Process> a_queue); 
 int busy_core(); 
@@ -316,10 +304,10 @@ void print_report(void){
 	cout << "NUMBER OF BUSY CORE:  " << busy_core() << endl;
 	cout << "CURRENT PROCESS STATUS" << 0 << endl;
 	// for loop
-	cout << "   CORE STEP:         " << 0 << endl;
-	// pull from core container
-	cout << "   DISK STEP:         " << 0 << endl;
-	// pull from disk container
+	cout << "   CORE STEP:         " << endl;
+	core_container(); 
+	cout << "   DISK STEP:         " << endl;
+	disk_container(); 
 	cout << "   INPUT STEP:        " << 0 << endl;
 	// pull from input container
 	cout << "   DISPLAY STEP:      " << 0 << endl;
@@ -334,7 +322,21 @@ void print_report(void){
 
 // print report helper function
 int busy_core(){
-	return 0; 
+	int count; 
+	for (int i = 0; i < cores_size ; i++){
+		if(cores[i].status == BUSY)
+			count++; 
+	} 
+}
+
+void core_container(){
+	for(int i = 0 ; i < cores_size ; i++){
+		cout << cores[i].process_container._process_id << endl;
+	}
+}
+
+void disk_container(){
+	cout << disk.process_container._process_id << endl; 
 }
 
 void queue_traverse(queue<Process> a_queue){
@@ -343,25 +345,4 @@ void queue_traverse(queue<Process> a_queue){
 		cout << "	Process:[" << temp_queue.front()._process_id <<"]\n"; 
 		temp_queue.pop();
 	}
-}
-
-// event handler helper function
-
-
-
-
-void display_request_completion(Process& a_process){
-	a_process.task_queue.pop(); 
-	event_handler(a_process); 
-}
-
-void input_request(Process& a_process, int terminal_time){ 
-	a_process._state = BLOCKED; 
-	CLOCK = CLOCK + terminal_time;
-	input_request_completion(a_process); 
-}
-
-void input_request_completion(Process& a_process){
-	a_process.task_queue.pop(); 
-	event_handler(a_process); 
 }

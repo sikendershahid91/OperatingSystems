@@ -37,8 +37,12 @@ bool event_handler(Process& a_process);
 void print_report(void); 
 bool create_model(void); 
 
+// queues
+queue<Process> event_list; 
+queue<Process> ready_queue; 
+queue<Process> disk_queue; 
 
-int CLOCK; 
+int CLOCK = 0; 
 
 enum STATE{
 	RUNNING, 
@@ -72,17 +76,12 @@ struct Process{
 	STATE _state;
 	int _process_id;  
 	int _init_time;
-	int first_line; 
-	int last_line; 
-	int current_line;
-	int delay;  
+	int delay;
 	Process(int a_process_id, int a_init_time){
 		_process_id = a_process_id; 
 		_init_time = a_init_time; 
 		_state = BLOCKED;
 		delay = 0;
-		// first line, last line, current line not really actually 
-		// this will go into process table 
 	}   
 	Process(){
 		_process_id = -1;
@@ -96,24 +95,16 @@ struct Process{
 struct Core{
 	Process process_container;
 	CONTAINER_STATUS status;
+	int busy_time; 
 }; 
 
 struct Disk{
 	Process process_container;
 	CONTAINER_STATUS status;
+	int busy_time; 
 };
 
-queue<Process> event_list; 
-int main(void){
-	load_data_into_memory();
-	create_processes(); 
-	create_model();
-	while(!event_list.empty()){
-		event_handler(event_list.front()); 
-		event_list.pop(); 
-	}
-	return 0; 
-}
+
 
 struct Data{
 	string operation; 
@@ -128,21 +119,21 @@ void load_data_into_memory(void){
 	}
 }
 
+
+
 bool create_processes(void){
-	int index = 1; 
+	int index = 1;
+	int pid=0; 
 	Process process(0,0);
 	TASK task = CORE; 
 	while(index <= input_table_size){
 		if(input_table[index].operation == "NEW" || index == input_table_size){
-			if(index>1){ // adding finished processes to the event_list
+			if(index>1){
+				pid++;
 				event_list.push(process); 
-		//		cout << "debug_2 process id going into queue " << process._process_id << endl; 
-				if(input_table[index].operation == "EOT")
-					break; 
 			}
 			if(index != input_table_size){
-		//		cout <<"debug_2 process id --" << index << endl;
-				Process new_process(index, input_table[index].parameter);   
+				Process new_process(pid, input_table[index].parameter);   
 				process = new_process; 
 				index++;
 			}
@@ -158,38 +149,13 @@ bool create_processes(void){
 		else
 			return 0; // exception
 		ProcessTask process_task(task, input_table[index].parameter); 
-		//cout << "debug_2 task, parameter :: " << task << " " << input_table[index].parameter << endl;
 		process.task_queue.push(process_task); 
 		index++;  
 	}
 	return 1; 
 }
 
-// void sort_event_list(void){}
-// TODO : NEED SCHEDULAR MEMORY COLLAPSING
-bool event_handler(Process& a_process){
-	TASK a_process_task = a_process.task_queue.front()._task;
-	int a_param = a_process.task_queue.front()._time; 
-	cout << "PROCESS : " << a_process._process_id << "TASK : " << a_process_task << "PARAM : "<< a_param<< endl;
-	if(a_process_task == CORE)
-		core_request(a_process, a_param); 
-	else if(a_process_task == DISK)
-		disk_request(a_process, a_param); 
-	else if(a_process_task == INPUT)
-		input_request(a_process, a_param); 
-	else if(a_process_task == DISPLAY)
-		display_request(a_process, a_param); 
-	else
-		a_process._state = TERMINATED; 
-	if(a_process._state = TERMINATED){
-		print_report();
-		return 0; 
-	}
-	return 1; 
-}
 
-queue<Process> ready_queue; 
-queue<Process> disk_queue; 
 int free_cores; 
 Disk disk;
 Core cores[MAX_CORE_SIZE];
@@ -208,6 +174,138 @@ bool create_model(void){
 	}
 	return 1; 
 }
+
+
+int main(void){
+	load_data_into_memory();
+	create_processes(); 
+	create_model();
+	while(!event_list.empty()){
+		event_handler(event_list.front(), event_list.front()._init_time); 
+		event_list.pop(); 
+	}
+	return 0; 
+}
+
+
+
+bool event_handler(Process& a_process, int init_time){
+	CLOCK = init_time + CLOCK; 
+	if(!a_process.task_queue.empty()){
+		TASK a_process_task = a_process.task_queue.front()._task; 
+		int a_param = a_process.task_queue.front()._time; 
+		if(a_process_task == CORE){
+			core_request(a_process, a_param);
+			core_request_completion();
+		}
+		else if(a_process_task == DISK){
+			disk_request(a_process, a_param); 
+			disk_request_completion(); 
+		}
+		else if(a_process_task == INPUT){
+			input_request(a_process, a_param); 
+			input_request_completion(); 
+		}
+		else if(a_process_task == DISPLAY){
+			display_request(a_process, a_param); 
+			dispaly_request_completion(); 
+		}
+	}
+	else
+		print_report();
+	return 1; 
+}
+
+
+void core_request(Process& a_process, int request_time){
+	if(free_cores > 0){
+		a_process._state = RUNNING; 
+		cores[i].process_container = a_process; 
+		cores[i].status = BUSY; 
+		free_cores--;
+		CLOCK = CLOCK + request_time;
+	}
+	else{
+		a_process._state = READY; 
+		ready_queue.push(a_process); 
+	}
+}
+
+void core_request_completion(){
+	if(ready_queue.empty()){
+		free_cores++; 
+	}
+	else{
+		core_request(ready_queue.front(), ready_queue.front().task_queue.front()._time); 
+		ready_queue.pop(); 
+	}
+}
+
+
+void disk_request(Process& a_process, int request_type){
+	// 0 - request_type is nonblocking
+	// 1 - request_type is blocking
+	if(request_type == BLOCKING)
+		a_process._state = BLOCKED;
+	else{
+		a_process._state = READY;
+		ready_queue.push(a_process);  
+	}
+	if(disk.status == FREE){
+		disk.process_container = a_process; 
+		disk.status = BUSY; 
+		CLOCK = CLOCK + 10; 
+	}
+	else
+		disk_queue.push(a_process);
+	disk_request_completion(a_process); 
+}
+
+void disk_request_completion(Process& a_process){
+	if(disk_queue.empty()){
+		disk.status = FREE; 
+	}
+	else{
+		disk_request(disk_queue.front(), disk_queue.front().task_queue.front()._time); 
+		disk_queue.pop(); 
+	}
+	a_process.task_queue.pop(); 
+	event_handler(a_process); 
+}
+
+void display_request(Process& a_process, int terminal_time){
+	a_process._state = BLOCKED; 
+	CLOCK = CLOCK + terminal_time; 
+	display_request_completion(a_process); 
+}
+
+// void sort_event_list(void){}
+// TODO : NEED SCHEDULAR MEMORY COLLAPSING
+bool event_handler(Process& a_process){
+	if (!a_process.task_queue.empty())
+	{
+		TASK a_process_task = a_process.task_queue.front()._task;
+		int a_param = a_process.task_queue.front()._time; 
+		if(a_process_task == CORE)
+			core_request(a_process, a_param); 
+		else if(a_process_task == DISK)
+			disk_request(a_process, a_param); 
+		else if(a_process_task == INPUT)
+			input_request(a_process, a_param); 
+		else if(a_process_task == DISPLAY)
+			display_request(a_process, a_param); 
+		else
+			a_process._state = TERMINATED;
+	} 
+	else{
+		print_report();
+		return 0; 
+	}
+	return 1; 
+}
+
+
+
 
 
 // print report helper function prototypes
@@ -248,78 +346,9 @@ void queue_traverse(queue<Process> a_queue){
 }
 
 // event handler helper function
-void core_request(Process& a_process, int request_time){
-	if(free_cores > 0){
-		int i = 0; 
-		while(cores[i].status != FREE && i < cores_size){
-			i++; 
-		}
-		a_process._state = RUNNING; 
-		cores[i].process_container = a_process; 
-		cores[i].status = BUSY; 
-		free_cores--;
-		CLOCK = CLOCK + request_time; 
-	}
-	else{
-		a_process._state = READY; 
-		ready_queue.push(a_process); 
-	}
-	core_request_completion(a_process); 
-}
 
-void core_request_completion(Process& a_process){
-	if(ready_queue.empty()){
-		free_cores++; 
-		int i = 0; 
-		while(cores[i].status == BUSY && i < cores_size){
-			cores[i].status = FREE; 
-			break; 
-		}
-	}
-	else{
-		core_request(ready_queue.front(), ready_queue.front().task_queue.front()._time); 
-		ready_queue.pop(); 
-	}
-	a_process.task_queue.pop(); 
-	event_handler(a_process); 
-}
 
-void disk_request(Process& a_process, int request_type){
-	// 0 - request_type is nonblocking
-	// 1 - request_type is blocking
-	if(request_type == BLOCKING)
-		a_process._state = BLOCKED;
-	else{
-		a_process._state = READY;
-		ready_queue.push(a_process);  
-	}
-	if(disk.status == FREE){
-		disk.process_container = a_process; 
-		disk.status = BUSY; 
-		CLOCK = CLOCK + 10; 
-	}
-	else
-		disk_queue.push(a_process);
-	disk_request_completion(a_process); 
-}
 
-void disk_request_completion(Process& a_process){
-	if(disk_queue.empty()){
-		disk.status = FREE; 
-	}
-	else{
-		disk_request(disk_queue.front(), disk_queue.front().task_queue.front()._time); 
-		disk_queue.pop(); 
-	}
-	a_process.task_queue.pop(); 
-	event_handler(a_process); 
-}
-
-void display_request(Process& a_process, int terminal_time){
-	a_process._state = BLOCKED; 
-	CLOCK = CLOCK + terminal_time; 
-	display_request_completion(a_process); 
-}
 
 void display_request_completion(Process& a_process){
 	a_process.task_queue.pop(); 

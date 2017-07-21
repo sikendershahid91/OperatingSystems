@@ -92,21 +92,21 @@ void server(int portnum){
 	struct sockaddr_in serv_addr, cli_addr; 
 
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-		ERROR_MESSAGE("SOCKET ERROR"); 
-
+			ERROR_MESSAGE("SOCKET ERROR"); 
 	bzero((char *) &serv_addr, sizeof(serv_addr));
 	serv_addr.sin_family = AF_INET; 
 	serv_addr.sin_addr.s_addr = INADDR_ANY;  // ?
 	serv_addr.sin_port = htons(portnum);
-
 	if(bind(sockfd, (struct sockaddr*) &serv_addr, sizeof(serv_addr)) <0)
-		ERROR_MESSAGE("ERROR binding");
-	listen(sockfd, 5); 
-	cli_addr_length = sizeof(cli_addr); 
-	if((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, (socklen_t *) &cli_addr_length)) < 0)
-		ERROR_MESSAGE("ERROR accepting");
-	int value; 
+			ERROR_MESSAGE("ERROR binding");
+	
 	while(1){
+		listen(sockfd, 5); 
+		cli_addr_length = sizeof(cli_addr); 
+		if((newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, (socklen_t *) &cli_addr_length)) < 0)
+			ERROR_MESSAGE("ERROR accepting");
+		int value; 
+	
 		bzero(buffer, 512);
 		if(read(newsockfd, buffer, 512) < 0 )
 			ERROR_MESSAGE("ERROR reading from socket");
@@ -118,6 +118,7 @@ void server(int portnum){
 		else
 			cout << "response sent\n";
 
+		close(newsockfd); 
 	}
 }
 
